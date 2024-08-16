@@ -20,50 +20,23 @@ class ImageSlideshow extends StatefulWidget {
     this.indicatorPadding = 4,
     this.indicatorBottomPadding = 10,
     this.disableUserScrolling = false,
+    this.overlayMode = false, // New property
   }) : super(key: key);
 
-  /// The widgets to display in the [ImageSlideshow].
-  ///
-  /// Mainly intended for image widget, but other widgets can also be used.
   final List<Widget> children;
-
-  /// Width of the [ImageSlideshow].
   final double width;
-
-  /// Height of the [ImageSlideshow].
   final double height;
-
-  /// The page to show when first creating the [ImageSlideshow].
   final int initialPage;
-
-  /// The color to paint the indicator.
   final Color? indicatorColor;
-
-  /// The color to paint behind th indicator.
   final Color? indicatorBackgroundColor;
-
-  /// Called whenever the page in the center of the viewport changes.
   final ValueChanged<int>? onPageChanged;
-
-  /// Auto scroll interval.
-  ///
-  /// Do not auto scroll when you enter null or 0.
   final int? autoPlayInterval;
-
-  /// Loops back to first slide.
   final bool isLoop;
-
-  /// Radius of CircleIndicator.
   final double indicatorRadius;
-
-  /// Padding of CircleIndicator.
   final double indicatorPadding;
-
-  /// BottomPadding to Indicator.
   final double indicatorBottomPadding;
-
-  /// Disable page changes by the user.
   final bool disableUserScrolling;
+  final bool overlayMode; // New property
 
   @override
   ImageSlideshowState createState() => ImageSlideshowState();
@@ -160,16 +133,41 @@ class ImageSlideshowState extends State<ImageSlideshow> {
       height: widget.height,
       child: Stack(
         children: [
-          PageView.builder(
-            scrollBehavior: _scrollBehavior,
-            onPageChanged: _onPageChanged,
-            itemCount: widget.isLoop ? null : widget.children.length,
-            controller: _pageController,
-            itemBuilder: (context, index) {
-              final correctIndex = index % widget.children.length;
-              return widget.children[correctIndex];
-            },
-          ),
+          if (widget.overlayMode)
+            ValueListenableBuilder<int>(
+              valueListenable: _currentPageNotifier,
+              builder: (context, value, child) {
+                final nextIndex = (value + 1) % widget.children.length;
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: widget.children[nextIndex], // Next page in the background
+                    ),
+                    PageView.builder(
+                      scrollBehavior: _scrollBehavior,
+                      onPageChanged: _onPageChanged,
+                      itemCount: widget.isLoop ? null : widget.children.length,
+                      controller: _pageController,
+                      itemBuilder: (context, index) {
+                        final correctIndex = index % widget.children.length;
+                        return widget.children[correctIndex];
+                      },
+                    ),
+                  ],
+                );
+              },
+            )
+          else
+            PageView.builder(
+              scrollBehavior: _scrollBehavior,
+              onPageChanged: _onPageChanged,
+              itemCount: widget.isLoop ? null : widget.children.length,
+              controller: _pageController,
+              itemBuilder: (context, index) {
+                final correctIndex = index % widget.children.length;
+                return widget.children[correctIndex];
+              },
+            ),
           Positioned(
             left: 0,
             right: 0,
@@ -193,3 +191,4 @@ class ImageSlideshowState extends State<ImageSlideshow> {
     );
   }
 }
+
